@@ -1,0 +1,32 @@
+name: Build portable Windows app
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: x64
+      - name: Install build dependencies
+        run: python -m pip install -r gpo_macro/requirements.txt pyinstaller
+      - name: Package application
+        shell: pwsh
+        run: |
+          python -m PyInstaller --noconfirm --clean --onedir --console --name Spooksville --paths gpo_macro --collect-all pydirectinput --collect-all keyboard gpo_macro/app.py
+          Copy-Item gpo_macro/config.json dist/Spooksville/
+          Copy-Item gpo_macro/README.md dist/Spooksville/
+          Copy-Item gpo_macro/data dist/Spooksville/data -Recurse
+          Copy-Item gpo_macro/tools dist/Spooksville/tools -Recurse
+          Copy-Item gpo_macro/route_preview.jpg dist/Spooksville/
+          Compress-Archive -Path dist/Spooksville -DestinationPath Spooksville-Windows-Portable.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Spooksville-Windows-Portable
+          path: Spooksville-Windows-Portable.zip
